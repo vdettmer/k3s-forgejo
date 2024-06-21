@@ -1,0 +1,82 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: forgejo
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: git.vincent.lan
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: forgejo
+            port:
+              number: 8088
+      - path: /git
+        pathType: Prefix
+        backend:
+          service:
+            name: forgejo-ssh
+            port:
+              number: 222
+  tls:
+  - hosts:
+    - git.vincent.lan
+    secretName: git-vincent-lan
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: forgejo
+  labels:
+    app: forgejo
+spec:
+  ports:
+    - name: http
+      port: 8088
+      targetPort: 3000
+    - name: sshgit
+      port: 222
+      targetPort: 22
+  selector:
+    app: forgejo
+  type: LoadBalancer
+  externalIPs:
+    - 192.168.178.6
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forgejo
+  labels:
+    app: forgejo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: forgejo
+  template:
+    metadata:
+      labels:
+        app: forgejo
+    spec:
+      containers:
+        - name: forgejo
+          image: codeberg.org/forgejo/forgejo:7.0.4
+          env:
+          ports:
+            - name: http
+              containerPort: 4433
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          hostPath:
+            path: /usr/local/k8s/forgejo
+            type: Directory
