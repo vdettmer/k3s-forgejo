@@ -28,7 +28,10 @@ Create path /usr/local/k8s/forgejo on your k3s single host.
 ```
 mkdir -p /usr/local/k8s/forgejo
 ```
-
+Then apply the manifests
+```
+kubectl apply -f forgejo.yaml
+```
 How to setup forgejo backup?
 --------------
 
